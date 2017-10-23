@@ -793,14 +793,14 @@ class AutoModeler(object):
                                         '{}_{}.mdl'.format(self._mdl_prefix,
                                                            self.counter))
             cj_sorted = sort_components_by_distance_from_cj(model_2check,
-                                                            automodeler.freq_hz,
+                                                            self.freq_hz,
                                                             n_check_for_core=1,
                                                             perc_distant=75)
-            comps = import_difmap_model(model_2check, out_dir)
+            comps = import_difmap_model(model_2check, self.out_dir)
             ell_first = len(comps[0]) == 6
             if not ell_first:
                 print(Back.RED + "Core has changed position!" + Style.RESET_ALL)
-                comps = import_difmap_model(model_2check, out_dir)
+                comps = import_difmap_model(model_2check, self.out_dir)
                 first_comp = comps[0]
 
                 # Create new model with EG component first and CG all others
@@ -810,14 +810,14 @@ class AutoModeler(object):
                     new_comps.append(comp.to_circular())
 
                 export_difmap_model(new_comps, model_2check,
-                                    automodeler.freq_hz)
+                                    self.freq_hz)
                 modelfit_difmap(self.uv_fits_fname,
                                 '{}_{}.mdl'.format(self._mdl_prefix,
                                                    self.counter),
                                 '{}_{}.mdl'.format(self._mdl_prefix,
                                                    self.counter),
-                                path=self.uv_fits_dir, mdl_path=out_dir,
-                                out_path=out_dir,
+                                path=self.uv_fits_dir, mdl_path=self.out_dir,
+                                out_path=self.out_dir,
                                 niter=self.niter_difmap, stokes=self.stokes,
                                 show_difmap_output=self.show_difmap_output_modelfit)
 
@@ -837,8 +837,8 @@ class AutoModeler(object):
                                                    self.counter),
                                 '{}_{}.mdl'.format(self._mdl_prefix,
                                                    self.counter-1),
-                                path=self.uv_fits_dir, mdl_path=out_dir,
-                                out_path=out_dir,
+                                path=self.uv_fits_dir, mdl_path=self.out_dir,
+                                out_path=self.out_dir,
                                 niter=self.niter_difmap, stokes=self.stokes,
                                 show_difmap_output=self.show_difmap_output_modelfit)
                 self.counter -= 1
@@ -867,7 +867,8 @@ class AutoModeler(object):
 
         modelfit_difmap(self.uv_fits_fname, 'init_{}.mdl'.format(self.counter),
                         '{}_{}.mdl'.format(self._mdl_prefix, self.counter),
-                        path=self.uv_fits_dir, mdl_path=out_dir, out_path=out_dir,
+                        path=self.uv_fits_dir, mdl_path=self.out_dir,
+                        out_path=self.out_dir,
                         niter=self.niter_difmap, stokes=self.stokes,
                         show_difmap_output=self.show_difmap_output_modelfit)
 
@@ -879,7 +880,7 @@ class AutoModeler(object):
         model = Model(stokes='I')
         comps = import_difmap_model('{}_{}.mdl'.format(self._mdl_prefix, self.counter), self.out_dir)
         plot_clean_image_and_components(self.ccimage, comps,
-                                        outname=os.path.join(out_dir, "{}_image_{}.png".format(self._mdl_prefix, self.counter)),
+                                        outname=os.path.join(self.out_dir, "{}_image_{}.png".format(self._mdl_prefix, self.counter)),
                                         ra_range=self.ra_range_plot,
                                         dec_range=self.dec_range_plot)
         model.add_components(*comps)

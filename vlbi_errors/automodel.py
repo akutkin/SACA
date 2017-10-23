@@ -31,6 +31,9 @@ import matplotlib.pyplot as plt
 import tarfile
 from colorama import Fore, Back, Style
 
+from logging_local import start_logging
+logger = start_logging('debug', logfile='automodel.log')
+
 
 class FailedFindBestModelException(Exception):
     pass
@@ -159,8 +162,8 @@ class TotalFluxStopping(ImageBasedStoppingCriterion):
 
     def check_criterion(self):
         threshold = self.abs_threshold or self.rel_threshold * self.total_flux
-        print(Style.DIM + "{} message:".format(self.__class__.__name__))
-        print(Style.DIM + "Last model has flux = {:.3f}"
+        logger.debug(Style.DIM + "{} message:".format(self.__class__.__name__))
+        logger.debug(Style.DIM + "Last model has flux = {:.3f}"
                           " while CC total flux = {:.3f}".format(difmap_model_flux(self.files[-1]), self.total_flux) +
               Style.RESET_ALL)
         if difmap_model_flux(self.files[-1]) > self.total_flux:
@@ -188,8 +191,8 @@ class AddedComponentFluxLessRMSStopping(ImageBasedStoppingCriterion):
     def check_criterion(self):
         _dir, _fn = os.path.split(self.files[-1])
         last_comp = import_difmap_model(_fn, _dir)[-1]
-        print(Style.DIM + "{} message:".format(self.__class__.__name__))
-        print(Style.DIM + "Last added component has flux = {:.4f}"
+        logger.debug(Style.DIM + "{} message:".format(self.__class__.__name__))
+        logger.debug(Style.DIM + "Last added component has flux = {:.4f}"
                           " while threshold = {:.4f}".format(last_comp.p[0], self.threshold) +
               Style.RESET_ALL)
         return last_comp.p[0] < self.threshold
@@ -225,8 +228,8 @@ class AddedComponentFluxLessRMSFluxStopping(ImageBasedStoppingCriterion):
         last_comp = import_difmap_model(_fn, _dir)[-1]
         square_pixels = (np.hypot(self.beam_size, last_comp.p[3])/(2*self.ccimage.pixsize[0]/mas_to_rad))**2
         threshold = square_pixels*self.threshold
-        print(Style.DIM + "{} message:".format(self.__class__.__name__))
-        print(Style.DIM + "Last added component has flux = {:.4f}"
+        logger.debug(Style.DIM + "{} message:".format(self.__class__.__name__))
+        logger.debug(Style.DIM + "Last added component has flux = {:.4f}"
                           " while threshold = {:.4f}".format(last_comp.p[0], threshold) +
               Style.RESET_ALL)
         return last_comp.p[0] < threshold
@@ -255,9 +258,9 @@ class AddedTooDistantComponentStopping(ImageBasedStoppingCriterion):
         if self._bbox is None:
             threshold = self.n_rms*rms_image(self.ccimage, self.hovatta_factor)
             blc, trc = find_bbox(self.ccimage.image, threshold)
-            print(Style.DIM + "Calculating BLC, TRC in {}".format(self.__class__.__name__))
-            print(blc, trc)
-            print(Style.RESET_ALL)
+            logger.debug(Style.DIM + "Calculating BLC, TRC in {}".format(self.__class__.__name__))
+            logger.debug("{} {}".format(blc, trc))
+            logger.debug(Style.RESET_ALL)
             self._bbox = (blc, trc)
         return self._bbox
 
@@ -271,8 +274,8 @@ class AddedTooDistantComponentStopping(ImageBasedStoppingCriterion):
         else:
             dec_range = self.dec_range
             ra_range = self.ra_range
-        print(Style.DIM + "{} message:".format(self.__class__.__name__))
-        print(Style.DIM + "Last added component located at "
+        logger.debug(Style.DIM + "{} message:".format(self.__class__.__name__))
+        logger.debug(Style.DIM + "Last added component located at "
                           "(dec,ra) = {:.2f}, {:.2f}"
                           " while BBOX DEC : {:.2f} to {:.2f},"
                           " RA : {:.2f} to {:.2f}".format(dec_mas, ra_mas,
@@ -509,7 +512,7 @@ class SmallSizedComponentsModelFilter(ModelFilter):
         self.threshold_flux_small_sized_component = threshold_flux_small_sized_component
 
     def do_filter(self, model_file):
-        print(Style.DIM + "Checking {} in {}".format(os.path.basename(model_file),
+        logger.debug(Style.DIM + "Checking {} in {}".format(os.path.basename(model_file),
                                                      self.__class__.__name__) +
               Style.RESET_ALL)
         comps = import_difmap_model(model_file)
@@ -521,7 +524,7 @@ class SmallSizedComponentsModelFilter(ModelFilter):
              fluxes_of_small_sized_components]
         if not np.alltrue(small_sizes) and\
                 not np.alltrue(fluxes_of_small_sized_components):
-            print(Fore.RED + "Decreasing complexity because of too small"
+            logger.warning(Fore.RED + "Decreasing complexity because of too small"
                              " component(s) present" + Style.RESET_ALL)
             return True
         else:
@@ -530,13 +533,13 @@ class SmallSizedComponentsModelFilter(ModelFilter):
 
 class NegativeFluxComponentModelFilter(ModelFilter):
     def do_filter(self, model_file):
-        print(Style.DIM + "Checking {} in {}".format(os.path.basename(model_file),
+        logger.debug(Style.DIM + "Checking {} in {}".format(os.path.basename(model_file),
                                                      self.__class__.__name__) +
               Style.RESET_ALL)
         comps = import_difmap_model(model_file)
         negative_fluxes = [comp.p[0] < 0 for comp in comps]
         if np.any(negative_fluxes):
-            print(Fore.RED + "Decreasing complexity because of too negative flux"
+            logger.warning(Fore.RED + "Decreasing complexity because of too negative flux"
                              " component(s) present" + Style.RESET_ALL)
             return True
         else:
@@ -548,7 +551,7 @@ class ToElongatedCoreModelFilter(ModelFilter):
         self.small_e = small_e
 
     def do_filter(self, model_file):
-        print(Style.DIM + "Checking {} in {}".format(os.path.basename(model_file),
+        logger.debug(Style.DIM + "Checking {} in {}".format(os.path.basename(model_file),
                                                      self.__class__.__name__) +
               Style.RESET_ALL)
         core = import_difmap_model(model_file)[0]
@@ -557,7 +560,7 @@ class ToElongatedCoreModelFilter(ModelFilter):
         except IndexError:
             return False
         if e < self.small_e:
-            print(Fore.RED +
+            logger.warning(Fore.RED +
                   "Decreasing complexity because of too elongated core" +
                   Style.RESET_ALL)
             return True
@@ -585,14 +588,14 @@ class ComponentAwayFromSourceModelFilter(ModelFilter):
         self.dec_range = dec_range
 
     def do_filter(self, model_file):
-        print(Style.DIM + "Checking {} in {}".format(os.path.basename(model_file),
+        logger.debug(Style.DIM + "Checking {} in {}".format(os.path.basename(model_file),
                                                      self.__class__.__name__) +
               Style.RESET_ALL)
         comps = import_difmap_model(model_file)
         do_comps_in_bbox = [comp.is_within_radec(self.ra_range, self.dec_range)
                             for comp in comps]
         if not np.alltrue(do_comps_in_bbox):
-            print(Fore.RED +
+            logger.warning(Fore.RED +
                   "Decreasing complexity because of too distant component(s)"
                   " present" + Style.RESET_ALL)
             return True
@@ -623,7 +626,7 @@ class OverlappingComponentsModelFilter(ModelFilter):
                       zip(distances, sizes)]
             do_any_overlap.append(np.any(np.array(ratios) < 1.0))
         if np.any(do_any_overlap):
-            print(Fore.RED + "Decreasing complexity because of overlapping"
+            logger.warning(Fore.RED + "Decreasing complexity because of overlapping"
                              " component(s) present" + Style.RESET_ALL)
             return True
         else:
@@ -699,7 +702,7 @@ class AutoModeler(object):
     @property
     def ccimage(self):
         if self._ccimage is None:
-            print(Style.DIM + "CLEANing original uv data set" + Style.RESET_ALL)
+            logger.debug(Style.DIM + "CLEANing original uv data set" + Style.RESET_ALL)
             clean_difmap(self.uv_fits_fname, self._ccimage_path, self.stokes,
                          self.mapsize_clean, path=self.uv_fits_dir,
                          path_to_script=self.path_to_script,
@@ -727,14 +730,14 @@ class AutoModeler(object):
             set as residuals.
         """
         if model is not None:
-            print(Style.DIM + "Creating residuals using " + Style.RESET_ALL +
+            logger.debug(Style.DIM + "Creating residuals using " + Style.RESET_ALL +
                   "fitted model :")
-            print(model)
+            logger.debug(model)
             uvdata_ = UVData(self.uv_fits_path)
             uvdata_.substitute([model])
             uvdata_residual = self.uvdata - uvdata_
         else:
-            print(Style.DIM + "Creating \"residuals\" from original data alone" +
+            logger.debug(Style.DIM + "Creating \"residuals\" from original data alone" +
                   Style.RESET_ALL)
             uvdata_residual = self.uvdata
         uvdata_residual.save(self._uv_residuals_fits_path, rewrite=True)
@@ -753,7 +756,7 @@ class AutoModeler(object):
         :return:
             Instance of ``CGComponent``.
         """
-        print(Style.DIM + "Suggesting component..." + Style.RESET_ALL)
+        logger.debug(Style.DIM + "Suggesting component..." + Style.RESET_ALL)
         clean_difmap(self._uv_residuals_fits_path, self._ccimage_residuals_path,
                      self.stokes, self.mapsize_clean, path=self.out_dir,
                      path_to_script=self.path_to_script, outpath=self.out_dir)
@@ -763,7 +766,7 @@ class AutoModeler(object):
         imsize = image.imsize[0]
         mas_in_pix = abs(image.pixsize[0] / mas_to_rad)
         amp, y, x, bmaj = infer_gaussian(image.image)
-        print("Suggested bmaj = {} pixels".format(bmaj))
+        logger.debug("Suggested bmaj = {} pixels".format(bmaj))
         x = mas_in_pix * (x - imsize / 2) * np.sign(image.dx)
         y = mas_in_pix * (y - imsize / 2) * np.sign(image.dy)
         if np.isnan(bmaj):
@@ -781,14 +784,14 @@ class AutoModeler(object):
         else:
             raise Exception
 
-        print(Style.DIM + "Suggested: {}".format(comp) + Style.RESET_ALL)
+        logger.debug(Style.DIM + "Suggested: {}".format(comp) + Style.RESET_ALL)
         return comp
 
     def check_first_elliptic(self):
         # Check that first component is elliptic one and adjust model in case it
         # is not
         if self.counter > 1 and self.core_type == "eg":
-            print(Fore.GREEN + "Checking if elliptic core goes first!" + Style.RESET_ALL)
+            logger.debug(Fore.GREEN + "Checking if elliptic core goes first!" + Style.RESET_ALL)
             model_2check = os.path.join(self.out_dir,
                                         '{}_{}.mdl'.format(self._mdl_prefix,
                                                            self.counter))
@@ -799,7 +802,7 @@ class AutoModeler(object):
             comps = import_difmap_model(model_2check, self.out_dir)
             ell_first = len(comps[0]) == 6
             if not ell_first:
-                print(Back.RED + "Core has changed position!" + Style.RESET_ALL)
+                logger.debug(Back.RED + "Core has changed position!" + Style.RESET_ALL)
                 comps = import_difmap_model(model_2check, self.out_dir)
                 first_comp = comps[0]
 
@@ -825,13 +828,13 @@ class AutoModeler(object):
         # Check if there any close circular gaussians that can be merged in one
         # elliptical component
         if self.counter > 1:
-            print(Fore.GREEN + "Checking if components could be merged!" + Style.RESET_ALL)
+            logger.debug(Fore.GREEN + "Checking if components could be merged!" + Style.RESET_ALL)
             model_2check = os.path.join(self.out_dir,
                                         '{}_{}.mdl'.format(self._mdl_prefix,
                                                            self.counter))
             joined = component_joiner_serial(model_2check, self.beam, self.freq_hz)
             if joined:
-                print(Fore.RED + "Merged components" + Style.RESET_ALL)
+                logger.debug(Fore.RED + "Merged components" + Style.RESET_ALL)
                 modelfit_difmap(self.uv_fits_fname,
                                 '{}_{}.mdl'.format(self._mdl_prefix,
                                                    self.counter),
@@ -904,7 +907,7 @@ class AutoModeler(object):
 
         if start_model_fname is not None:
             mdl_dir, mdl_fname = os.path.split(start_model_fname)
-            print(Style.DIM + "Using model from {} as starting point".format(mdl_fname) +
+            logger.info(Style.DIM + "Using model from {} as starting point".format(mdl_fname) +
                   Style.RESET_ALL)
             comps = import_difmap_model(mdl_fname, mdl_dir)
             model = Model(stokes=self.stokes)
@@ -931,22 +934,22 @@ class AutoModeler(object):
                 continue
             # decision = decisions_and + decisions_or
             do_stop = np.alltrue(decisions_and) or np.any(decisions_or)
-            print(Back.GREEN + "Stopping criteria (AND):" +
+            logger.warning(Back.GREEN + "Stopping criteria (AND):" +
                   Style.RESET_ALL)
             for stopper, decision in zip(stoppers_and, decisions_and):
                 if decision:
-                    print(Fore.RED + "{}".format(stopper.__class__.__name__) +
+                    logger.warning(Fore.RED + "{}".format(stopper.__class__.__name__) +
                           Style.RESET_ALL)
                 else:
-                    print(Fore.GREEN + "{}".format(stopper.__class__.__name__) +
+                    logger.debug(Fore.GREEN + "{}".format(stopper.__class__.__name__) +
                           Style.RESET_ALL)
-            print(Back.GREEN + "Stopping criteria (OR):" + Style.RESET_ALL)
+            logger.debug(Back.GREEN + "Stopping criteria (OR):" + Style.RESET_ALL)
             for stopper, decision in zip(stoppers_or, decisions_or):
                 if decision:
-                    print(Fore.RED + "{}".format(stopper.__class__.__name__) +
+                    logger.warning(Fore.RED + "{}".format(stopper.__class__.__name__) +
                           Style.RESET_ALL)
                 else:
-                    print(Fore.GREEN + "{}".format(stopper.__class__.__name__) +
+                    logger.debug(Fore.GREEN + "{}".format(stopper.__class__.__name__) +
                           Style.RESET_ALL)
 
             if do_stop:
@@ -1171,7 +1174,7 @@ if __name__ == '__main__':
                         id_best -= 1
                     else:
                         break
-                print("Best model is {}".format(files[id_best]))
+                logger.info("Best model is {}".format(files[id_best]))
 
                 best_model = files[id_best]
 

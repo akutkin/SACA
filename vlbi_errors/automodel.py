@@ -876,8 +876,8 @@ class AutoModeler(object):
                         show_difmap_output=self.show_difmap_output_modelfit)
 
         # Checks that alter model files
-        self.check_first_elliptic()
-        self.check_merging()
+#        self.check_first_elliptic()
+#        self.check_merging()
 
         # Update model and plot results of current iteration
         model = Model(stokes='I')

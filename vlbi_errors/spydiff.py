@@ -131,7 +131,7 @@ def clean_difmap(fname, outfname, stokes, mapsize_clean, path=None,
     difmapout.write("exit\n")
     difmapout.close()
     # TODO: Use subprocess for silent cleaning?
-    shell_command = "difmap < " + command_file + " 2>&1"
+    shell_command = "/home/osh/Soft/difmap_2.4l_p1/./difmap < " + command_file + " 2>&1"
     if not show_difmap_output:
         shell_command += " >/dev/null"
     os.system(shell_command)
@@ -574,14 +574,16 @@ def modelfit_difmap(fname, mdl_fname, out_fname, niter=50, stokes='i',
     difmapout.close()
 
     # TODO: Use subprocess?
-    shell_command = "difmap < " + command_file + " 2>&1"
+    shell_command = "/home/osh/Soft/difmap_2.4l_p1/./difmap < " + command_file + " 2>&1"
     if not show_difmap_output:
         shell_command += " >/dev/null"
     os.system(shell_command)
 
 
 def make_map_with_core_at_zero(mdl_file, uv_fits_fname, mapsize_clean,
-                               path_to_script, outfname="shifted_cc.fits",
+                               path_to_script,
+                               beam_restore=None,
+                               outfname="shifted_cc.fits",
                                stokes="I"):
     """
     Function that shifts map in a way that core in new map will have zero
@@ -607,7 +609,7 @@ def make_map_with_core_at_zero(mdl_file, uv_fits_fname, mapsize_clean,
     dec_mas = -core.p[2]
     shift = (-ra_mas, -dec_mas)
     clean_difmap(uv_fn, outfname, stokes, mapsize_clean, uv_dir, path_to_script,
-                 shift=shift)
+                 beam_restore=beam_restore, shift=shift)
 
 
 # # DIFMAP_MAPPSR
@@ -697,11 +699,4 @@ def make_map_with_core_at_zero(mdl_file, uv_fits_fname, mapsize_clean,
 #    difmapout.write("print imstat(bpa)\n")
 
 if __name__ == "__main__":
-    mdl_file = "/home/ilya/STACK/2251+158_u_2013_02_28_fitted_10_out.mdl"
-    out_mdl = "/home/ilya/STACK/2251+158_u_2013_02_28_fitted_10_out.mdl"
-    is_cj = sort_components_by_distance_from_cj(mdl_file, 15*10**9,
-                                                outpath=out_mdl)
-    if is_cj:
-        print("CJ detected!")
-    else:
-        print("No")
+    print("Spydiff module")

@@ -882,10 +882,10 @@ class AutoModeler(object):
         # Update model and plot results of current iteration
         model = Model(stokes='I')
         comps = import_difmap_model('{}_{}.mdl'.format(self._mdl_prefix, self.counter), self.out_dir)
-        plot_clean_image_and_components(self.ccimage, comps,
-                                        outname=os.path.join(self.out_dir, "{}_image_{}.png".format(self._mdl_prefix, self.counter)),
-                                        ra_range=self.ra_range_plot,
-                                        dec_range=self.dec_range_plot)
+#        plot_clean_image_and_components(self.ccimage, comps,
+#                                        outname=os.path.join(self.out_dir, "{}_image_{}.png".format(self._mdl_prefix, self.counter)),
+#                                        ra_range=self.ra_range_plot,
+#                                        dec_range=self.dec_range_plot)
         model.add_components(*comps)
         self.model = model
 

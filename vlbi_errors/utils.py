@@ -36,8 +36,9 @@ degree_to_rad = 0.01745329
 degree_to_mas = 36. * 10 ** 5
 
 
-stokes_dict = {-4: 'LR', -3: 'RL', -2: 'LL', -1: 'RR', 1: 'I', 2: 'Q', 3: 'U',
-               4: 'V'}
+stokes_dict = {-8:'YX', -7:'XY', -6:'YY', -5:'XX',
+               -4:'LR', -3:'RL', -2:'LL', -1:'RR',
+                1: 'I', 2: 'Q', 3: 'U', 4: 'V'}
 
 
 class SyncArray(np.ndarray):

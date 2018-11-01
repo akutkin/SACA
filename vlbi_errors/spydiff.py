@@ -211,6 +211,16 @@ def import_difmap_model(mdl_fname, mdl_dir=None):
     return comps
 
 
+def core_alpha_delta(mfile):
+    fid = open(mfile)
+    lines = fid.readlines()
+    fid.close()
+    _, r, t = np.array([l.replace('v','').split()[:3] for l in lines
+                    if not l.startswith('!')], dtype=float)[0]
+
+    return r*np.cos(t*np.pi/180.0 + np.pi/2), -r*np.sin(t*np.pi/180.0 + np.pi/2)
+
+
 def export_difmap_model(comps, out_fname, freq_hz):
     """
     Function that export iterable of ``Component`` instances to difmap format
@@ -604,10 +614,9 @@ def make_map_with_core_at_zero(mdl_file, uv_fits_fname, mapsize_clean,
     """
     mdl_dir, mdl_fn = os.path.split(mdl_file)
     uv_dir, uv_fn = os.path.split(uv_fits_fname)
-    core = import_difmap_model(mdl_file, mdl_dir)[0]
-    ra_mas = -core.p[1]
-    dec_mas = -core.p[2]
-    shift = (-ra_mas, -dec_mas)
+
+    ra_mas, dec_mas = core_alpha_delta(mdl_file)
+    shift = (ra_mas, dec_mas)
     clean_difmap(uv_fn, outfname, stokes, mapsize_clean, uv_dir, path_to_script,
                  beam_restore=beam_restore, shift=shift)
 

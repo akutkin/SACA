@@ -149,20 +149,20 @@ def cv_difmap_models(dfm_model_files, uv_fits, K=5, baselines=None, n_iter=50,
                      out_dir=None, seed=None, n_rep=10, stokes='I'):
     """
     Function that Cross-Validates several difmap models of the same uv-data set.
-    
-    :param dfm_model_files: 
+
+    :param dfm_model_files:
         Iterable of paths to difmap-style model files.
-    :param uv_fits: 
+    :param uv_fits:
         Path to FITS-file with uv-data.
     :param K: (optional)
         Number of CV folds to split the full uv-data set. One of the ``K`` folds
         will be test sample. (default: ``5``)
-    :param baselines: (optional) 
+    :param baselines: (optional)
         Iterable of baseline number to consider in CV. If ``None`` then use all.
         (default: ``None``)
     :param n_iter: (optional)
         Number of iterations for difmap. (default: ``50``)
-    :param out_dir: 
+    :param out_dir:
         Directory to store temporal FITS-files with splitted data. If ``None``
         then use CWD. (default: ``None``)
     :param seed: (optional)
@@ -175,7 +175,7 @@ def cv_difmap_models(dfm_model_files, uv_fits, K=5, baselines=None, n_iter=50,
     :param stokes: (optional)
         Stokes parameter string. ``I``, ``RR`` or ``LL`` are currently
         supported. (default: ``I``)
-    :return: 
+    :return:
         Dictionary with keys - number denoting the model and values - lists of
         ``n_rep`` values of CV-scores. One can use their mean and std to get
         single value and it's uncertainty for each of the models.
@@ -222,15 +222,15 @@ def cv_difmap_models(dfm_model_files, uv_fits, K=5, baselines=None, n_iter=50,
 def score(uv_fits_path, mdl_path, stokes='I'):
     """
     Returns rms of model on given uv-data for stokes 'I'.
-    
-    :param uv_fits_path: 
+
+    :param uv_fits_path:
         Path to uv-fits file.
-    :param mdl_path: 
+    :param mdl_path:
         Path to difmap model text file or FITS-file with CLEAN model.
     :param stokes: (optional)
         Stokes parameter string. ``I``, ``RR`` or ``LL`` currently supported.
         (default: ``I``)
-    :return: 
+    :return:
         Per-point rms between given data and model evaluated at given data
         points.
     """
@@ -267,20 +267,23 @@ def score(uv_fits_path, mdl_path, stokes='I'):
 
 if __name__ == '__main__':
 
-    # dfm_mdl_files = ['/home/ilya/Dropbox/0235/tmp/to_compare/k1mod1.mdl',
-    #                  '/home/ilya/Dropbox/0235/tmp/to_compare/k1mod2.mdl']
-    dfm_mdl_files = ['/home/ilya/Dropbox/0235/tmp/q_models_for_CV/q_mod1.mdl',
-                     '/home/ilya/Dropbox/0235/tmp/q_models_for_CV/q_mod2.mdl',
-                     '/home/ilya/Dropbox/0235/tmp/q_models_for_CV/q_mod3.mdl',
-                     '/home/ilya/Dropbox/0235/tmp/q_models_for_CV/q_mod4.mdl',
-                     '/home/ilya/Dropbox/0235/tmp/q_models_for_CV/q_mod5.mdl']
-    uv_fits = '/home/ilya/Dropbox/0235/tmp/to_compare/0235+164.k1.2008_09_02.uvf_difmap'
+    dfm_mdl_files = ['/home/osh/Dropbox/Ilya/2CV/0235+164.q1.2008_08_15.mdl',
+                     '/home/osh/Dropbox/Ilya/2CV/0235+164.q1.2008_08_15.new.mdl',
+                     '/home/osh/Dropbox/Ilya/2CV/0235+164.q1.2008_08_15.Jorstad.mdl']
+    uv_fits = '/home/osh/Dropbox/Ilya/2CV/0235+164.q1.2008_08_15.uvp'
+#    dfm_mdl_files = ['/home/ilya/Dropbox/0235/tmp/q_models_for_CV/q_mod1.mdl',
+#                     '/home/ilya/Dropbox/0235/tmp/q_models_for_CV/q_mod2.mdl',
+#                     '/home/ilya/Dropbox/0235/tmp/q_models_for_CV/q_mod3.mdl',
+#                     '/home/ilya/Dropbox/0235/tmp/q_models_for_CV/q_mod4.mdl',
+#                     '/home/ilya/Dropbox/0235/tmp/q_models_for_CV/q_mod5.mdl']
+#    uv_fits = '/home/ilya/Dropbox/0235/tmp/to_compare/0235+164.k1.2008_09_02.uvf_difmap'
     cv_means, cv_stds =\
         cv_difmap_models(dfm_mdl_files, uv_fits, baselines=None, K=5,
-                         out_dir='/home/ilya/Dropbox/0235/tmp/to_compare',
-                         n_iter=300, n_rep=1, stokes='I')
+                         out_dir='/home/osh/Dropbox/Ilya/2CV',
+                         n_iter=300, n_rep=30, stokes='I')
     # Plot CV-RMSE versus model number
     keys = sorted(cv_means.keys())
+    plt.figure()
     plt.errorbar(keys, [cv_means[i][0] for i in keys],
                  yerr=[cv_stds[i][0] for i in keys])
     plt.xlabel(r'model number')

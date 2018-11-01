@@ -21,8 +21,9 @@ import matplotlib
 
 vec_complex = np.vectorize(np.complex)
 vec_int = np.vectorize(np.int)
-stokes_dict = {-4: 'LR', -3: 'RL', -2: 'LL', -1: 'RR', 1: 'I', 2: 'Q', 3: 'U',
-               4: 'V'}
+stokes_dict = {-8:'YX', -7:'XY', -6:'YY', -5:'XX',
+               -4:'LR', -3:'RL', -2:'LL', -1:'RR',
+                1: 'I', 2: 'Q', 3: 'U', 4: 'V'}
 
 
 # FIXME: Handling FITS files with only one scan (used for CV)
@@ -39,8 +40,8 @@ class UVData(object):
         self._weights = self.view_uvdata({'COMPLEX': 2})
 
         # Numpy boolean arrays with shape of ``UVData.uvdata``.
-        self._nw_indxs = self._weights <= 0
-        self._pw_indxs = self._weights > 0
+        self._nw_indxs = self._weights < 0
+        self._pw_indxs = self._weights >= 0
 
         self._error = None
         self._scans_bl = None
@@ -48,9 +49,12 @@ class UVData(object):
         self._times = None
 
         self._frequency = None
+        self._nchans = None
         self._freq_width = None
         self._freq_width_if = None
         self._band_center = None
+
+        self.scale_uv = 1.0 # scale for uv scaling )
 
         # Dictionary with keys - baselines & values - boolean numpy arrays or
         # lists of boolean numpy arrays with indexes of that baseline (or it's
@@ -65,6 +69,9 @@ class UVData(object):
         self._get_baselines_info()
         self._noise_diffs = None
         self._noise_v = None
+
+    def set_uv_scale(self, scale):
+        self.scale_uv = scale
 
     def _get_baselines_info(self):
         """
@@ -244,10 +251,10 @@ class UVData(object):
     def save_fraction(self, fname, frac, random_state=0):
         """
         Save only fraction of of data on each baseline.
-        
+
         :param fname:
             File path to save.
-        :param frac: 
+        :param frac:
             Float (0., 1.). Fraction of points from each baseline to save.
         """
         from sklearn.model_selection import ShuffleSplit
@@ -681,7 +688,7 @@ class UVData(object):
             u *= self.frequency
             v *= self.frequency
             w *= self.frequency
-        return np.vstack((u, v, w)).T
+        return np.vstack((u, v, w)).T * self.scale_uv
 
     @property
     def uv(self):
@@ -693,6 +700,7 @@ class UVData(object):
             points.
         """
         return self.uvw[:, :2]
+
 
     @property
     def imsize_by_uv_coverage(self):
@@ -766,7 +774,7 @@ class UVData(object):
             Numpy boolean array with size equal to number of correlations and
             ``True`` values corresponding to specified correlations.
         """
-        assert check_issubset(stokes, self.stokes), "Must be RR, LL, RL or LR!"
+#        assert check_issubset(stokes, self.stokes), "Must be RR, LL, RL or LR!"
         stokes_num = [self.stokes_dict_inv[stokes_] for stokes_ in stokes]
         return to_boolean_array(stokes_num, self.nstokes)
 
@@ -850,7 +858,7 @@ class UVData(object):
         # FIXME: Choose only one stokes parameter
         if stokes is None:
             stokes = self.stokes
-        if check_issubset(stokes, self.stokes):
+        if stokes and (stokes[0] in self.stokes):
             sl = self._get_uvdata_slice(baselines, start_time, stop_time, bands,
                                         stokes)
             result = uvdata[sl]
@@ -1559,17 +1567,24 @@ class UVData(object):
         .. note:: All checks are in ``_choose_uvdata`` method.
         """
 
-        if not pylab:
+        try:
+            import pylab
+        except:
             raise Exception('Install ``pylab`` for plotting!')
 
         if not stokes:
             stokes = 'I'
 
+        if start_time is not None and stop_time is not None:
+            times_indxs = self._get_times_indexes(start_time, stop_time)
+            times = self.times[times_indxs]
+        else:
+            times= self.times
+
         uvdata = self._choose_uvdata(baselines=baselines, bands=bands,
                                      stokes=stokes, freq_average=freq_average,
                                      start_time=start_time, stop_time=stop_time)
-        times_indxs = self._get_times_indexes(start_time, stop_time)
-        times = self.times[times_indxs]
+        print uvdata.shape
 
         if style == 'a&p':
             a1 = np.angle(uvdata)
@@ -1579,6 +1594,8 @@ class UVData(object):
             a2 = uvdata.imag
         else:
             raise Exception('Only ``a&p`` and ``re&im`` styles are allowed!')
+
+#        return times, a1, a2
 
         if not freq_average:
 
@@ -1607,9 +1624,10 @@ class UVData(object):
             if not sym:
                 sym = '.k'
             pylab.subplot(2, 1, 1)
+            # WARNING: set proper selection for first index of a1/a2
             pylab.plot(times, a1, sym)
             pylab.subplot(2, 1, 2)
-            pylab.plot(times, a2, sym)
+            pylab.plot(times, a2[:,0], sym)
             if style == 'a&p':
                 pylab.ylim([-math.pi, math.pi])
             pylab.show()
